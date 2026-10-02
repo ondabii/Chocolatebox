@@ -3,6 +3,6 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "build": "echo build success"
+    "build": "node -e \"const fs=require('fs'); if(!fs.existsSync('dist')){fs.mkdirSync('dist'); ['index.html','admin.html','404.html','_redirects','package.json'].forEach(f=>{if(fs.existsSync(f))fs.copyFileSync(f,'dist/'+f)}); ['assets','images','admin'].forEach(d=>{if(fs.existsSync(d))fs.cpSync(d,'dist/'+d,{recursive:true})}); console.log('dist output created successfully');}\""
   }
 }
