@@ -319,12 +319,79 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       return jsonResponse({ success: true });
     }
 
-    // 14. DELETE /api/admin/logs/:id
-    const logDelMatch = path.match(/^\/api\/admin\/logs\/(\d+)$/);
-    if (method === 'DELETE' && logDelMatch) {
-      const id = parseInt(logDelMatch[1], 10);
-      await env.DB.prepare('DELETE FROM open_logs WHERE id = ?').bind(id).run();
-      return jsonResponse({ success: true });
+    // 15. GET /api/settings
+    if (method === 'GET' && path === '/api/settings') {
+      await env.DB.prepare(
+        `CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          site_title TEXT NOT NULL DEFAULT '초콜릿 박스 (Chocolate Box) - 방종곡 & 인터미션',
+          chocolate_tab_title TEXT NOT NULL DEFAULT '초콜릿 박스',
+          chocolate_tab_desc TEXT NOT NULL DEFAULT '',
+          teabag_tab_title TEXT NOT NULL DEFAULT '티백 케이스',
+          teabag_tab_desc TEXT NOT NULL DEFAULT '',
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`
+      ).run();
+
+      const row: any = await env.DB.prepare('SELECT * FROM settings WHERE id = 1').first();
+      if (!row) {
+        return jsonResponse({
+          site_title: '초콜릿 박스 (Chocolate Box) - 방종곡 & 인터미션',
+          chocolate_tab_title: '초콜릿 박스',
+          chocolate_tab_desc: '',
+          teabag_tab_title: '티백 케이스',
+          teabag_tab_desc: '',
+        });
+      }
+      return jsonResponse({
+        site_title: row.site_title,
+        chocolate_tab_title: row.chocolate_tab_title,
+        chocolate_tab_desc: row.chocolate_tab_desc,
+        teabag_tab_title: row.teabag_tab_title,
+        teabag_tab_desc: row.teabag_tab_desc,
+      });
+    }
+
+    // 16. POST /api/admin/settings
+    if (method === 'POST' && path === '/api/admin/settings') {
+      const b: any = await request.json();
+      await env.DB.prepare(
+        `CREATE TABLE IF NOT EXISTS settings (
+          id INTEGER PRIMARY KEY CHECK (id = 1),
+          site_title TEXT NOT NULL DEFAULT '초콜릿 박스 (Chocolate Box) - 방종곡 & 인터미션',
+          chocolate_tab_title TEXT NOT NULL DEFAULT '초콜릿 박스',
+          chocolate_tab_desc TEXT NOT NULL DEFAULT '',
+          teabag_tab_title TEXT NOT NULL DEFAULT '티백 케이스',
+          teabag_tab_desc TEXT NOT NULL DEFAULT '',
+          updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        )`
+      ).run();
+
+      await env.DB.prepare(
+        `INSERT INTO settings (id, site_title, chocolate_tab_title, chocolate_tab_desc, teabag_tab_title, teabag_tab_desc, updated_at)
+         VALUES (1, ?, ?, ?, ?, ?, datetime('now'))
+         ON CONFLICT(id) DO UPDATE SET
+          site_title = excluded.site_title,
+          chocolate_tab_title = excluded.chocolate_tab_title,
+          chocolate_tab_desc = excluded.chocolate_tab_desc,
+          teabag_tab_title = excluded.teabag_tab_title,
+          teabag_tab_desc = excluded.teabag_tab_desc,
+          updated_at = datetime('now')`
+      ).bind(
+        b.site_title || '초콜릿 박스 (Chocolate Box) - 방종곡 & 인터미션',
+        b.chocolate_tab_title || '초콜릿 박스',
+        b.chocolate_tab_desc || '',
+        b.teabag_tab_title || '티백 케이스',
+        b.teabag_tab_desc || ''
+      ).run();
+
+      return jsonResponse({
+        site_title: b.site_title || '초콜릿 박스 (Chocolate Box) - 방종곡 & 인터미션',
+        chocolate_tab_title: b.chocolate_tab_title || '초콜릿 박스',
+        chocolate_tab_desc: b.chocolate_tab_desc || '',
+        teabag_tab_title: b.teabag_tab_title || '티백 케이스',
+        teabag_tab_desc: b.teabag_tab_desc || '',
+      });
     }
 
     return jsonResponse({ error: 'Endpoint not found' }, 404);
